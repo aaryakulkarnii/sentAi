@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldHalf,
   Server,
+  UploadCloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAlertStore } from "@/stores/alerts";
@@ -21,6 +22,7 @@ import { useAlertStore } from "@/stores/alerts";
 const NAV = [
   { section: "Operations", items: [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/ingest", icon: UploadCloud, label: "Ingest Logs" },
     { href: "/alerts", icon: AlertTriangle, label: "Alerts" },
     { href: "/incidents", icon: Siren, label: "Incidents" },
     { href: "/assets", icon: Server, label: "Assets" },

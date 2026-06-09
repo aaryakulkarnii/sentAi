@@ -5,6 +5,7 @@ from app.api.v1.routes import (
     assets,
     auth,
     incidents,
+    ingest,
     investigations,
     mitre,
     reports,
@@ -16,6 +17,7 @@ router.include_router(auth.router,           prefix="/auth",           tags=["au
 router.include_router(alerts.router,         prefix="/alerts",         tags=["alerts"])
 router.include_router(assets.router,         prefix="/assets",         tags=["assets"])
 router.include_router(incidents.router,      prefix="/incidents",      tags=["incidents"])
+router.include_router(ingest.router,         prefix="/ingest",         tags=["ingest"])
 router.include_router(investigations.router, prefix="/investigations",  tags=["investigations"])
 router.include_router(threat_intel.router,   prefix="/threat-intel",   tags=["threat-intel"])
 router.include_router(mitre.router,          prefix="/mitre",          tags=["mitre"])

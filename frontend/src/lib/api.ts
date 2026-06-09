@@ -83,7 +83,20 @@ export const assetsApi = {
 // ── Investigation endpoints ───────────────────────────────────────────────────
 export const investigationsApi = {
   trigger: (incident_id: string) => api.post("/investigations/trigger", { incident_id }),
+  status: (incident_id: string) => api.get(`/investigations/${incident_id}/status`),
   get: (incident_id: string) => api.get(`/investigations/${incident_id}/latest`),
+};
+
+// ── Ingestion endpoints ───────────────────────────────────────────────────────
+export const ingestApi = {
+  uploadCsv: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post("/ingest/csv", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  sampleUrl: `${API_URL}/api/v1/ingest/sample`,
 };
 
 // ── MITRE endpoints ───────────────────────────────────────────────────────────

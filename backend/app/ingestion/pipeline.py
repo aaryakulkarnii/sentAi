@@ -25,30 +25,33 @@ def init_engines(sigma: SigmaEngine, behavioral: BehavioralEngine) -> None:
     _behavioral_engine = behavioral
 
 
-async def process_raw_event(source: str, raw: dict) -> NormalizedEvent:
-    """Full pipeline for a single raw Kafka event."""
-    event = normalize(source, raw)
+async def process_event(event: NormalizedEvent) -> int:
+    """Run detection → alerting → correlation on an already-normalised event.
+
+    Returns the number of alerts created. Shared by the Kafka and CSV paths.
+    """
     event = enrich(event)
 
     doc_id: str | None = None
     try:
         doc_id = await index_event(event)
     except Exception as exc:
-        logger.error("index_event_failed", source=source, error=str(exc))
+        logger.error("index_event_failed", error=str(exc))
 
     if _sigma_engine is None or _behavioral_engine is None:
         logger.warning("detection_engines_not_initialized")
-        return event
+        return 0
 
     sigma_hits = _sigma_engine.evaluate(event)
     behavioral_hits = await _behavioral_engine.evaluate(event)
 
+    created = 0
     for detection in sigma_hits + behavioral_hits:
         try:
             alert = await alert_service.create_from_detection(event, detection, doc_id)
             if alert:
+                created += 1
                 logger.debug("pipeline_alert", alert_id=alert.id, rule=detection.rule_id)
-                # Tier 2: correlate the new alert into an incident.
                 try:
                     await handle_new_alert(alert.id)
                 except Exception as exc:
@@ -56,4 +59,11 @@ async def process_raw_event(source: str, raw: dict) -> NormalizedEvent:
         except Exception as exc:
             logger.error("alert_creation_failed", rule=detection.rule_id, error=str(exc))
 
+    return created
+
+
+async def process_raw_event(source: str, raw: dict) -> NormalizedEvent:
+    """Full pipeline for a single raw Kafka event."""
+    event = normalize(source, raw)
+    await process_event(event)
     return event

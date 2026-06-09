@@ -1,8 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowUpRight, Clock } from "lucide-react";
+import { X, ArrowUpRight, Clock, Brain } from "lucide-react";
 import { incidentsApi } from "@/lib/api";
 import { cn, riskScoreColor, riskScoreLabel, SEVERITY_DOT, STATUS_COLOR } from "@/lib/utils";
 import { Badge, Button } from "@/components/ui";
@@ -24,6 +25,7 @@ export default function IncidentDrawer({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const router = useRouter();
   const id = incident?.id;
 
   const { data: timeline = [] } = useQuery<TimelineEvent[]>({
@@ -112,10 +114,18 @@ export default function IncidentDrawer({
                 </Button>
               ))}
               {incident.status === "open" && (
-                <Button size="sm" variant="primary" onClick={escalate}>
+                <Button size="sm" variant="secondary" onClick={escalate}>
                   <ArrowUpRight size={13} /> Escalate
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="primary"
+                className="ml-auto"
+                onClick={() => router.push(`/investigate?incident=${incident.id}`)}
+              >
+                <Brain size={13} /> Investigate with AI
+              </Button>
             </div>
 
             <div className="flex-1 space-y-6 overflow-y-auto p-5">
