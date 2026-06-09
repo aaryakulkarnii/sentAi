@@ -44,3 +44,6 @@ Thumbs.db
 
 # Next.js generated
 next-env.d.ts
+
+# Generated reports
+reports/
