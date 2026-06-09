@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: 222 47% 6%;
+  --bg-secondary: 222 40% 9%;
+  --bg-tertiary: 222 35% 12%;
+  --border: 222 20% 18%;
+  --accent-cyan: 195 100% 50%;
+  --accent-green: 150 100% 50%;
+}
+
+* { box-sizing: border-box; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(222 20% 25%); border-radius: 3px; }
+
+.sentinel-grid {
+  background-image:
+    linear-gradient(hsl(222 20% 18% / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(222 20% 18% / 0.3) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@keyframes threat-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(0 100% 50% / 0.4); }
+  50%       { box-shadow: 0 0 0 8px hsl(0 100% 50% / 0); }
+}
+.threat-pulse { animation: threat-pulse 2s ease-in-out infinite; }

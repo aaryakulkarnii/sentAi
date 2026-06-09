@@ -1,0 +1,14 @@
+winlogbeat.event_logs:
+  - name: Microsoft-Windows-Sysmon/Operational
+    ignore_older: 72h
+  - name: Security
+    ignore_older: 72h
+  - name: System
+
+output.kafka:
+  hosts: ["kafka:29092"]
+  topic: "sentinelai.sysmon"
+  codec.json:
+    pretty: false
+
+logging.level: info

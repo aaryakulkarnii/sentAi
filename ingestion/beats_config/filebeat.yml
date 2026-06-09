@@ -1,0 +1,18 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/auth.log
+      - /var/log/syslog
+    fields:
+      source_type: auditd
+    processors:
+      - add_host_metadata: ~
+
+output.kafka:
+  hosts: ["kafka:29092"]
+  topic: "sentinelai.auditd"
+  codec.json:
+    pretty: false
+
+logging.level: info
