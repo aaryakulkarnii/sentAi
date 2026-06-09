@@ -7,21 +7,35 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_ENV: str = "development"
-    SECRET_KEY: str
+
+    # DEV_MODE = zero-infra: SQLite + in-memory Redis, OpenSearch/Qdrant/Kafka
+    # disabled. Lets the whole core run with just `uvicorn`, no Docker.
+    DEV_MODE: bool = True
+
+    # Safe dev defaults so the app boots with no .env at all.
+    SECRET_KEY: str = "dev-secret-change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 480
 
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
 
-    # PostgreSQL
+    # PostgreSQL (used only when DEV_MODE is False)
     POSTGRES_HOST: str = "postgres"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "sentinelai"
     POSTGRES_USER: str = "sentinel"
-    POSTGRES_PASSWORD: str
+    POSTGRES_PASSWORD: str = "sentinel_dev"
+
+    # SQLite file used in DEV_MODE
+    SQLITE_PATH: str = "sentinel_dev.db"
 
     @property
     def DATABASE_URL(self) -> str:
+        if self.DEV_MODE:
+            return f"sqlite+aiosqlite:///./{self.SQLITE_PATH}"
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -45,13 +59,18 @@ class Settings(BaseSettings):
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka:29092"
     KAFKA_CONSUMER_GROUP: str = "sentinelai-consumers"
 
-    # LLM
+    # LLM – Groq (free-tier, OpenAI-compatible). Set GROQ_API_KEY in .env.
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL_FAST: str = "llama-3.1-8b-instant"
+    # Legacy OpenAI knobs (kept for compatibility; unused when Groq is set)
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
 
     # Threat Intel
     ABUSEIPDB_API_KEY: str = ""
     OTX_API_KEY: str = ""
+    MALWARE_BAZAAR_API_KEY: str = ""
 
     # GeoIP (MaxMind GeoLite2 – optional)
     GEOIP_DB_PATH: str = "data/geoip/GeoLite2-City.mmdb"
@@ -67,6 +86,10 @@ class Settings(BaseSettings):
     BEHAVIORAL_PORT_SCAN_THRESHOLD: int = 20
     BEHAVIORAL_PORT_SCAN_WINDOW: int = 120
     ALERT_DEDUP_WINDOW: int = 3600
+
+    # Correlation (Tier 2)
+    CORRELATION_WINDOW: int = 1800  # seconds: alerts within this window may group
+    CORRELATION_MIN_ALERTS: int = 2  # alerts sharing an entity before an incident forms
 
     # AWS
     S3_BUCKET_REPORTS: str = "sentinelai-reports"

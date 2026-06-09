@@ -1,7 +1,6 @@
 """Dependency health probes for the /health endpoint."""
 
 import structlog
-from aiokafka.admin import AIOKafkaAdminClient
 from sqlalchemy import text
 
 from app.core.config import settings
@@ -12,20 +11,25 @@ from app.db.redis import get_redis
 
 logger = structlog.get_logger(__name__)
 
+DISABLED = {"status": "disabled", "detail": "not used in DEV_MODE"}
 
-async def check_postgres() -> dict:
+
+async def check_database() -> dict:
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
-        return {"status": "ok"}
+        backend = "sqlite" if settings.DEV_MODE else "postgres"
+        return {"status": "ok", "backend": backend}
     except Exception as exc:
-        logger.warning("health_postgres_failed", error=str(exc))
+        logger.warning("health_db_failed", error=str(exc))
         return {"status": "error", "detail": str(exc)}
 
 
 async def check_opensearch() -> dict:
+    client = get_opensearch()
+    if client is None:
+        return DISABLED
     try:
-        client = get_opensearch()
         health = await client.cluster.health()
         status = health.get("status", "unknown")
         if status == "red":
@@ -42,13 +46,18 @@ async def check_redis() -> dict:
         pong = await redis.ping()
         if not pong:
             return {"status": "error", "detail": "ping returned false"}
-        return {"status": "ok"}
+        backend = "in-memory" if settings.DEV_MODE else "redis"
+        return {"status": "ok", "backend": backend}
     except Exception as exc:
         logger.warning("health_redis_failed", error=str(exc))
         return {"status": "error", "detail": str(exc)}
 
 
 async def check_kafka() -> dict:
+    if settings.DEV_MODE:
+        return DISABLED
+    from aiokafka.admin import AIOKafkaAdminClient
+
     admin = AIOKafkaAdminClient(bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
     try:
         await admin.start()
@@ -62,33 +71,30 @@ async def check_kafka() -> dict:
 
 
 async def check_qdrant() -> dict:
+    client = get_qdrant()
+    if client is None:
+        return DISABLED
     try:
-        client = get_qdrant()
         collections = await client.get_collections()
-        count = len(collections.collections)
-        return {"status": "ok", "collections": count}
+        return {"status": "ok", "collections": len(collections.collections)}
     except Exception as exc:
         logger.warning("health_qdrant_failed", error=str(exc))
         return {"status": "error", "detail": str(exc)}
 
 
 async def run_health_checks() -> dict:
-    postgres = await check_postgres()
-    opensearch = await check_opensearch()
-    redis = await check_redis()
-    kafka = await check_kafka()
-    qdrant = await check_qdrant()
-
     services = {
-        "postgres": postgres,
-        "opensearch": opensearch,
-        "redis": redis,
-        "kafka": kafka,
-        "qdrant": qdrant,
+        "database": await check_database(),
+        "opensearch": await check_opensearch(),
+        "redis": await check_redis(),
+        "kafka": await check_kafka(),
+        "qdrant": await check_qdrant(),
     }
-    all_ok = all(s["status"] == "ok" for s in services.values())
+    # "disabled" services don't count against health.
+    all_ok = all(s["status"] in ("ok", "disabled") for s in services.values())
     return {
         "status": "ok" if all_ok else "degraded",
+        "mode": "dev" if settings.DEV_MODE else "production",
         "version": "0.1.0",
         "services": services,
     }

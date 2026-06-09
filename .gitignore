@@ -38,3 +38,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Dev database (zero-infra SQLite)
+*.db
+
+# Next.js generated
+next-env.d.ts

@@ -20,26 +20,48 @@ logger = structlog.get_logger(__name__)
 
 
 async def on_startup() -> None:
-    logger.info("Starting SentinelAI backend")
+    mode = "DEV (zero-infra)" if settings.DEV_MODE else "PRODUCTION"
+    logger.info("starting_sentinelai_backend", mode=mode)
+
+    # Core stores (always needed). Redis is in-memory in DEV_MODE.
     await init_db()
     await init_redis()
-    await init_opensearch()
-    await init_qdrant()
-    init_geoip()
-    await ensure_index_templates()
 
+    # Heavy infra — only in production. Each is best-effort so a missing
+    # service degrades gracefully rather than crashing startup.
+    if not settings.DEV_MODE:
+        for name, fn in (("opensearch", init_opensearch), ("qdrant", init_qdrant)):
+            try:
+                await fn()
+            except Exception as exc:
+                logger.warning("infra_init_failed", service=name, error=str(exc))
+        try:
+            await ensure_index_templates()
+        except Exception as exc:
+            logger.warning("index_template_init_failed", error=str(exc))
+
+    init_geoip()
+
+    # Detection engines (work without external infra).
     sigma = SigmaEngine(rules_dir=settings.SIGMA_RULES_DIR)
     behavioral = BehavioralEngine()
     init_engines(sigma, behavioral)
     logger.info("detection_engines_ready", sigma_rules=len(sigma.rules))
 
+    # Real-time alert delivery.
     register_listener(broadcast_alert)
-    await start_alert_subscriber()
-    await start_kafka_consumer()
-    logger.info("All services initialised")
+    if not settings.DEV_MODE:
+        await start_alert_subscriber()
+        try:
+            await start_kafka_consumer()
+        except Exception as exc:
+            logger.warning("kafka_consumer_unavailable", error=str(exc))
+
+    logger.info("sentinelai_backend_ready", mode=mode)
 
 
 async def on_shutdown() -> None:
-    await stop_kafka_consumer()
-    await stop_alert_subscriber()
-    logger.info("SentinelAI backend stopped")
+    if not settings.DEV_MODE:
+        await stop_kafka_consumer()
+        await stop_alert_subscriber()
+    logger.info("sentinelai_backend_stopped")

@@ -57,12 +57,27 @@ export const alertsApi = {
 
 // ── Incident endpoints ────────────────────────────────────────────────────────
 export const incidentsApi = {
-  list: () => api.get("/incidents"),
+  list: (params?: { status?: string }) => api.get("/incidents/", { params }),
   get: (id: string) => api.get(`/incidents/${id}`),
   create: (data: { title: string; description?: string; alert_ids?: string[] }) =>
-    api.post("/incidents", data),
+    api.post("/incidents/", data),
   update: (id: string, data: object) => api.patch(`/incidents/${id}`, data),
+  changeStatus: (id: string, status: string) => api.post(`/incidents/${id}/status`, { status }),
+  assign: (id: string, assigned_to: string | null) =>
+    api.post(`/incidents/${id}/assign`, { assigned_to }),
+  escalate: (id: string) => api.post(`/incidents/${id}/escalate`),
+  alerts: (id: string) => api.get(`/incidents/${id}/alerts`),
+  timeline: (id: string) => api.get(`/incidents/${id}/timeline`),
+  notes: (id: string) => api.get(`/incidents/${id}/notes`),
   addNote: (id: string, content: string) => api.post(`/incidents/${id}/notes`, { content }),
+};
+
+// ── Asset endpoints ───────────────────────────────────────────────────────────
+export const assetsApi = {
+  list: () => api.get("/assets/"),
+  create: (data: object) => api.post("/assets/", data),
+  update: (id: string, data: object) => api.patch(`/assets/${id}`, data),
+  remove: (id: string) => api.delete(`/assets/${id}`),
 };
 
 // ── Investigation endpoints ───────────────────────────────────────────────────
@@ -75,6 +90,8 @@ export const investigationsApi = {
 export const mitreApi = {
   list: () => api.get("/mitre/techniques"),
   get: (id: string) => api.get(`/mitre/techniques/${id}`),
+  matrix: () => api.get("/mitre/matrix"),
+  coverage: () => api.get("/mitre/coverage"),
 };
 
 // ── Threat intel endpoints ────────────────────────────────────────────────────

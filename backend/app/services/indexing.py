@@ -47,6 +47,8 @@ def _event_document(event: NormalizedEvent) -> dict:
 
 async def ensure_index_templates() -> None:
     client = get_opensearch()
+    if client is None:
+        return
 
     log_template = {
         "index_patterns": [LOG_INDEX_PATTERN],
@@ -104,9 +106,11 @@ async def ensure_index_templates() -> None:
             logger.warning("index_template_error", name=name, error=str(exc))
 
 
-async def index_event(event: NormalizedEvent) -> str:
-    """Index a normalised event; returns the OpenSearch document ID."""
+async def index_event(event: NormalizedEvent) -> str | None:
+    """Index a normalised event; returns the OpenSearch document ID (or None)."""
     client = get_opensearch()
+    if client is None:
+        return None
     index = _index_name(event)
     doc = _event_document(event)
     resp = await client.index(index=index, body=doc, refresh=False)
@@ -116,6 +120,8 @@ async def index_event(event: NormalizedEvent) -> str:
 async def index_alert_document(alert_data: dict) -> None:
     """Index alert metadata for search."""
     client = get_opensearch()
+    if client is None:
+        return
     doc = {
         "@timestamp": datetime.now(timezone.utc).isoformat(),
         **alert_data,

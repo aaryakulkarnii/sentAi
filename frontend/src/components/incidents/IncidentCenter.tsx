@@ -1,20 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { Siren, ChevronRight } from "lucide-react";
 import { incidentsApi } from "@/lib/api";
-import { riskScoreColor } from "@/lib/utils";
+import { cn, riskScoreColor, riskScoreLabel, STATUS_COLOR } from "@/lib/utils";
+import { PageHeader, Panel, Badge, EmptyState } from "@/components/ui";
+import IncidentDrawer from "@/components/incidents/IncidentDrawer";
 import type { Incident } from "@/types";
 
-const STATUS_COLOR: Record<string, string> = {
-  open: "text-red-400 bg-red-400/10",
-  investigating: "text-amber-400 bg-amber-400/10",
-  contained: "text-blue-400 bg-blue-400/10",
-  resolved: "text-green-400 bg-green-400/10",
-  closed: "text-gray-400 bg-gray-400/10",
-};
-
 export default function IncidentCenter() {
+  const [selected, setSelected] = useState<Incident | null>(null);
   const { data: incidents = [] } = useQuery<Incident[]>({
     queryKey: ["incidents"],
     queryFn: () => incidentsApi.list().then((r) => r.data),
@@ -22,32 +19,73 @@ export default function IncidentCenter() {
   });
 
   return (
-    <main className="p-6 space-y-4">
-      <h1 className="text-xl font-semibold text-white">Incidents</h1>
-      <div className="space-y-2">
-        {incidents.map((inc) => (
-          <motion.div
-            key={inc.id}
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-gray-900/60 border border-gray-800/50 rounded-xl px-5 py-4 flex items-center gap-4"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-white text-sm truncate">{inc.title}</p>
-              <p className="text-xs text-gray-500 mt-0.5 font-mono">{inc.id.slice(0, 8)}…</p>
-            </div>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[inc.status] ?? ""}`}>
-              {inc.status}
-            </span>
-            <span className={`font-mono font-bold text-sm ${riskScoreColor(inc.risk_score)}`}>
-              {inc.risk_score}
-            </span>
-          </motion.div>
-        ))}
-        {incidents.length === 0 && (
-          <p className="text-center py-16 text-gray-600 text-sm">No incidents</p>
-        )}
-      </div>
+    <main className="mx-auto max-w-[1400px] space-y-5 p-6">
+      <PageHeader
+        title="Incidents"
+        subtitle={`${incidents.length} correlated incidents`}
+        icon={<Siren size={17} />}
+      />
+
+      {incidents.length === 0 ? (
+        <EmptyState
+          icon={<Siren size={18} />}
+          title="No incidents"
+          hint="Correlated alert clusters will be promoted to incidents automatically."
+        />
+      ) : (
+        <div className="space-y-2.5">
+          {incidents.map((inc, i) => (
+            <motion.div
+              key={inc.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+            >
+              <Panel hover className="cursor-pointer" onClick={() => setSelected(inc)}>
+                <div className="flex items-center gap-4 px-5 py-4">
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 flex-shrink-0 flex-col items-center justify-center rounded-lg border font-mono",
+                      inc.risk_score >= 80
+                        ? "border-sev-critical/30 bg-sev-critical/10"
+                        : inc.risk_score >= 60
+                          ? "border-sev-high/30 bg-sev-high/10"
+                          : "border-white/10 bg-white/[0.03]",
+                    )}
+                  >
+                    <span className={cn("text-base font-semibold leading-none", riskScoreColor(inc.risk_score))}>
+                      {inc.risk_score}
+                    </span>
+                    <span className="mt-0.5 text-[0.55rem] uppercase tracking-wide text-ink-500">risk</span>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">{inc.title}</p>
+                    <div className="mt-1 flex items-center gap-2.5 text-xs text-ink-500">
+                      <span className="font-mono">{inc.id.slice(0, 8)}</span>
+                      <span className="text-ink-700">·</span>
+                      <span>{riskScoreLabel(inc.risk_score)} severity</span>
+                      {inc.assigned_to && (
+                        <>
+                          <span className="text-ink-700">·</span>
+                          <span>assigned</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <Badge className={STATUS_COLOR[inc.status] ?? STATUS_COLOR.closed}>
+                    {inc.status}
+                  </Badge>
+                  <ChevronRight size={16} className="text-ink-600" />
+                </div>
+              </Panel>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      <IncidentDrawer incident={selected} onClose={() => setSelected(null)} />
     </main>
   );
 }

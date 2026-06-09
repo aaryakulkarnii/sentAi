@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-import geoip2.database
 import structlog
 
 from app.core.config import settings
@@ -12,11 +12,22 @@ from app.ingestion.schema import NormalizedEvent
 
 logger = structlog.get_logger(__name__)
 
-_city_reader: geoip2.database.Reader | None = None
-_asn_reader: geoip2.database.Reader | None = None
+# geoip2 is an optional dependency; enrichment is skipped if it's unavailable.
+try:
+    import geoip2.database
+    import geoip2.errors
+
+    _GEOIP_AVAILABLE = True
+except ImportError:
+    _GEOIP_AVAILABLE = False
+
+_city_reader: Any | None = None
+_asn_reader: Any | None = None
 
 
-def _open_reader(path: str) -> geoip2.database.Reader | None:
+def _open_reader(path: str) -> Any | None:
+    if not _GEOIP_AVAILABLE:
+        return None
     p = Path(path)
     if not p.is_file():
         return None
@@ -29,6 +40,9 @@ def _open_reader(path: str) -> geoip2.database.Reader | None:
 
 def init_geoip() -> None:
     global _city_reader, _asn_reader
+    if not _GEOIP_AVAILABLE:
+        logger.info("geoip_unavailable")
+        return
     _city_reader = _open_reader(settings.GEOIP_DB_PATH)
     _asn_reader = _open_reader(settings.GEOIP_ASN_DB_PATH)
     if _city_reader:

@@ -31,9 +31,10 @@ export interface Incident {
 // ── Investigation ─────────────────────────────────────────────────────────────
 export interface TimelineEvent {
   timestamp: string;
-  technique_id: string;
-  description: string;
-  host: string | null;
+  technique_id: string | null;
+  description: string | null;
+  source_ip: string | null;
+  severity: string;
 }
 
 export interface Investigation {
@@ -47,6 +48,30 @@ export interface Investigation {
   created_at: string;
 }
 
+export interface IncidentDetail extends Incident {
+  alert_count: number;
+  technique_ids: string[];
+}
+
+export interface IncidentNote {
+  id: string;
+  incident_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+}
+
+// ── Asset ─────────────────────────────────────────────────────────────────────
+export interface Asset {
+  id: string;
+  hostname: string;
+  ip: string | null;
+  os: string | null;
+  criticality: number; // 1–5
+  owner: string | null;
+  created_at: string;
+}
+
 // ── MITRE ─────────────────────────────────────────────────────────────────────
 export interface MitreTechnique {
   id: string;           // T1059.001
@@ -55,6 +80,27 @@ export interface MitreTechnique {
   sub_technique: string | null;
   description: string | null;
   url: string | null;
+}
+
+export interface MatrixTechnique {
+  id: string;
+  technique: string;
+  sub_technique: string | null;
+  covered: boolean;
+  alert_count: number;
+}
+
+export interface MatrixTactic {
+  id: string | null;
+  name: string;
+  techniques: MatrixTechnique[];
+  alert_count: number;
+}
+
+export interface MitreMatrix {
+  tactics: MatrixTactic[];
+  total_techniques: number;
+  covered_techniques: number;
 }
 
 // ── User ─────────────────────────────────────────────────────────────────────

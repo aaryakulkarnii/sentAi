@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth";
+import { MOCK_AUTH, MOCK_TOKEN, MOCK_USER } from "@/lib/mockAuth";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,6 +14,18 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Dev bypass: trust the local session, skip the backend /auth/me call.
+    if (MOCK_AUTH) {
+      const stored = localStorage.getItem("sentinel_token");
+      if (!stored) {
+        router.replace("/login");
+        return;
+      }
+      setAuth(MOCK_USER, stored || MOCK_TOKEN);
+      setChecking(false);
+      return;
+    }
 
     async function verify() {
       const stored = localStorage.getItem("sentinel_token");
