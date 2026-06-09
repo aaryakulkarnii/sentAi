@@ -112,3 +112,16 @@ export const threatIntelApi = {
   searchIoc: (q: string) => api.get("/threat-intel/ioc/search", { params: { q } }),
   getCve: (id: string) => api.get(`/threat-intel/cve/${id}`),
 };
+
+// ── Report endpoints ──────────────────────────────────────────────────────────
+export const reportsApi = {
+  list: () => api.get("/reports/"),
+  generate: (incident_id: string, format: "pdf" | "docx") =>
+    api.post("/reports/generate", { incident_id, format }),
+  downloadUrl: (id: string) => `${API_URL}/api/v1/reports/${id}/download`,
+};
+
+// ── System endpoints ──────────────────────────────────────────────────────────
+export const systemApi = {
+  config: () => api.get("/system/config"),
+};

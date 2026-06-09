@@ -9,6 +9,7 @@ from app.api.v1.routes import (
     investigations,
     mitre,
     reports,
+    system,
     threat_intel,
 )
 
@@ -22,3 +23,4 @@ router.include_router(investigations.router, prefix="/investigations",  tags=["i
 router.include_router(threat_intel.router,   prefix="/threat-intel",   tags=["threat-intel"])
 router.include_router(mitre.router,          prefix="/mitre",          tags=["mitre"])
 router.include_router(reports.router,        prefix="/reports",        tags=["reports"])
+router.include_router(system.router,         prefix="/system",         tags=["system"])
