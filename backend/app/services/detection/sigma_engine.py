@@ -7,7 +7,6 @@ from pathlib import Path
 
 import structlog
 import yaml
-from sigma.collection import SigmaCollection
 
 from app.ingestion.fieldmap import event_to_fields
 from app.ingestion.schema import NormalizedEvent
@@ -72,13 +71,18 @@ class SigmaEngine:
             logger.warning("sigma_rules_empty", path=rules_dir)
             return
 
-        # Validate via pysigma
+        # Validate via pysigma when available (optional dependency).
         try:
-            contents = [p.read_text(encoding="utf-8") for p in yaml_paths]
-            SigmaCollection.from_yaml(contents)
-        except Exception as exc:
-            logger.error("sigma_validation_failed", error=str(exc))
-            return
+            from sigma.collection import SigmaCollection
+        except ImportError:
+            logger.info("pysigma_unavailable_skipping_validation")
+        else:
+            try:
+                contents = [p.read_text(encoding="utf-8") for p in yaml_paths]
+                SigmaCollection.from_yaml(contents)
+            except Exception as exc:
+                logger.error("sigma_validation_failed", error=str(exc))
+                return
 
         loaded = 0
         for path in yaml_paths:

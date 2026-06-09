@@ -2,16 +2,16 @@
 
 import asyncio
 import json
+from typing import Any
 
 import structlog
-from aiokafka import AIOKafkaConsumer
 
 from app.core.config import settings
 from app.ingestion.pipeline import process_raw_event
 
 logger = structlog.get_logger(__name__)
 
-_consumer: AIOKafkaConsumer | None = None
+_consumer: Any | None = None
 _task: asyncio.Task | None = None
 
 TOPICS = [
@@ -35,6 +35,8 @@ async def _consume():
 
 async def start_kafka_consumer() -> None:
     global _consumer, _task
+    from aiokafka import AIOKafkaConsumer
+
     _consumer = AIOKafkaConsumer(
         *TOPICS,
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,

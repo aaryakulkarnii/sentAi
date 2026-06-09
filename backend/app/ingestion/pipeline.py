@@ -8,6 +8,7 @@ from app.ingestion.enrichment import enrich
 from app.ingestion.normalizer import normalize
 from app.ingestion.schema import NormalizedEvent
 from app.services.alert_service import alert_service
+from app.services.correlation.engine import handle_new_alert
 from app.services.detection.behavioral import BehavioralEngine
 from app.services.detection.sigma_engine import SigmaEngine
 from app.services.indexing import index_event
@@ -47,6 +48,11 @@ async def process_raw_event(source: str, raw: dict) -> NormalizedEvent:
             alert = await alert_service.create_from_detection(event, detection, doc_id)
             if alert:
                 logger.debug("pipeline_alert", alert_id=alert.id, rule=detection.rule_id)
+                # Tier 2: correlate the new alert into an incident.
+                try:
+                    await handle_new_alert(alert.id)
+                except Exception as exc:
+                    logger.error("correlation_failed", alert_id=alert.id, error=str(exc))
         except Exception as exc:
             logger.error("alert_creation_failed", rule=detection.rule_id, error=str(exc))
 
