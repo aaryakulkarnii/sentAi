@@ -7,7 +7,7 @@ import pytest
 from app.services.health import (
     check_kafka,
     check_opensearch,
-    check_postgres,
+    check_database,
     check_qdrant,
     check_redis,
     run_health_checks,
@@ -15,7 +15,7 @@ from app.services.health import (
 
 
 @pytest.mark.asyncio
-async def test_check_postgres_ok():
+async def test_check_database_ok():
     mock_engine = MagicMock()
     mock_conn = AsyncMock()
     mock_conn.execute = AsyncMock()
@@ -25,7 +25,7 @@ async def test_check_postgres_ok():
     mock_engine.connect.return_value = mock_ctx
 
     with patch("app.services.health.engine", mock_engine):
-        result = await check_postgres()
+        result = await check_database()
     assert result["status"] == "ok"
 
 
@@ -50,7 +50,7 @@ async def test_check_opensearch_degraded_cluster():
 @pytest.mark.asyncio
 async def test_run_health_checks_all_ok():
     with (
-        patch("app.services.health.check_postgres", AsyncMock(return_value={"status": "ok"})),
+        patch("app.services.health.check_database", AsyncMock(return_value={"status": "ok"})),
         patch("app.services.health.check_opensearch", AsyncMock(return_value={"status": "ok"})),
         patch("app.services.health.check_redis", AsyncMock(return_value={"status": "ok"})),
         patch("app.services.health.check_kafka", AsyncMock(return_value={"status": "ok"})),
@@ -68,8 +68,9 @@ async def test_check_kafka_ok():
     mock_admin.list_topics = AsyncMock(return_value=["sentinelai.sysmon"])
     mock_admin.close = AsyncMock()
 
-    with patch("app.services.health.AIOKafkaAdminClient", return_value=mock_admin):
-        result = await check_kafka()
+    with patch("app.services.health.settings.DEV_MODE", False):
+        with patch("aiokafka.admin.AIOKafkaAdminClient", return_value=mock_admin):
+            result = await check_kafka()
     assert result["status"] == "ok"
     assert result["topics"] == 1
 

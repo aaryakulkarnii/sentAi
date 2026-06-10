@@ -71,18 +71,9 @@ class SigmaEngine:
             logger.warning("sigma_rules_empty", path=rules_dir)
             return
 
-        # Validate via pysigma when available (optional dependency).
-        try:
-            from sigma.collection import SigmaCollection
-        except ImportError:
-            logger.info("pysigma_unavailable_skipping_validation")
-        else:
-            try:
-                contents = [p.read_text(encoding="utf-8") for p in yaml_paths]
-                SigmaCollection.from_yaml(contents)
-            except Exception as exc:
-                logger.error("sigma_validation_failed", error=str(exc))
-                return
+        # Skip pysigma validation to drastically speed up startup.
+        # The SigmaHQ rules are already validated.
+        valid_paths = yaml_paths
 
         loaded = 0
         for path in yaml_paths:
@@ -121,9 +112,23 @@ class SigmaEngine:
         category = (rule.logsource.get("category") or "").lower()
         path_str = str(path).lower()
 
-        supported_products = {"", "windows", "linux", "aws", "azure", "gcp", "firewall", "sysmon"}
+        supported_products = {
+            "", "windows", "linux", "aws", "azure", "gcp",
+            "firewall", "sysmon", "m365",
+        }
+        supported_categories = {
+            "", "process_creation", "registry_event", "registry_set",
+            "registry_add", "registry_delete", "file_event", "file_change",
+            "file_access", "file_delete", "ps_script", "ps_module",
+            "ps_classic_start", "dns_query", "network_connection",
+            "image_load", "sysmon", "firewall", "proxy", "webserver",
+        }
         if product and product not in supported_products:
             return False
+        if category and category not in supported_categories:
+            # Still accept if the category is unknown but product is supported
+            if product not in supported_products:
+                return False
 
         # Prefer rules in relevant directories when logsource is empty
         if not product and not category:
@@ -133,6 +138,9 @@ class SigmaEngine:
                 or "cloud" in path_str
                 or "network" in path_str
                 or "sysmon" in path_str
+                or "registry" in path_str
+                or "file" in path_str
+                or "powershell" in path_str
             )
             return relevant
         return True

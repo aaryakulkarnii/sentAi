@@ -22,6 +22,15 @@ from app.services.detection.sigma_engine import SigmaEngine
 async def _setup() -> None:
     assert settings.DEV_MODE, "test expects DEV_MODE"
     await init_db()
+    
+    # Seed MitreTechnique for the test
+    async with AsyncSessionLocal() as db:
+        from app.models.mitre import MitreTechnique
+        await db.merge(MitreTechnique(id="T1046", tactic="Discovery", technique="Network Service Discovery"))
+        await db.merge(MitreTechnique(id="T1110", tactic="Credential Access", technique="Brute Force"))
+        await db.merge(MitreTechnique(id="T1110.003", tactic="Credential Access", technique="Password Spraying"))
+        await db.commit()
+        
     await init_redis()
     init_engines(SigmaEngine(rules_dir=settings.SIGMA_RULES_DIR), BehavioralEngine())
 

@@ -35,7 +35,7 @@ async def response_node(state: InvestigationState) -> InvestigationState:
     # Optional LLM refinement grounded in the playbook context.
     llm_steps = None
     if llm.available and techniques:
-        ctx = knowledge_base.context_for(" ".join(techniques), top_k=3)
+        ctx = await knowledge_base.context_for(" ".join(techniques), top_k=3)
         prompt = (
             f"An incident involves MITRE techniques {', '.join(techniques)}.\n"
             f"Context:\n{ctx}\n\n"

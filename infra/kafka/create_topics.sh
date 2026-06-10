@@ -10,7 +10,7 @@ TOPICS=(
   "sentinelai.alerts"
 )
 for topic in "${TOPICS[@]}"; do
-  kafka-topics.sh --create \
+  kafka-topics --create \
     --bootstrap-server $BOOTSTRAP \
     --replication-factor 1 \
     --partitions 4 \

@@ -30,7 +30,7 @@ async def mitre_node(state: InvestigationState) -> InvestigationState:
                     "url": row.url,
                 }
             else:
-                ctx = knowledge_base.search(tid, top_k=1)
+                ctx = await knowledge_base.search(tid, top_k=1)
                 mappings[tid] = {
                     "id": tid,
                     "technique": ctx[0].title if ctx else tid,

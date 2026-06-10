@@ -1,6 +1,10 @@
-"""Application configuration (pydantic-settings)."""
-
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+if not (_ROOT / "data").exists():
+    _ROOT = Path(__file__).resolve().parent.parent.parent
+_DATA_DIR = _ROOT / "data"
 
 
 class Settings(BaseSettings):
@@ -73,12 +77,12 @@ class Settings(BaseSettings):
     MALWARE_BAZAAR_API_KEY: str = ""
 
     # GeoIP (MaxMind GeoLite2 – optional)
-    GEOIP_DB_PATH: str = "data/geoip/GeoLite2-City.mmdb"
-    GEOIP_ASN_DB_PATH: str = "data/geoip/GeoLite2-ASN.mmdb"
+    GEOIP_DB_PATH: str = str(_DATA_DIR / "geoip/GeoLite2-City.mmdb")
+    GEOIP_ASN_DB_PATH: str = str(_DATA_DIR / "geoip/GeoLite2-ASN.mmdb")
     MAXMIND_LICENSE_KEY: str = ""
 
     # Detection
-    SIGMA_RULES_DIR: str = "data/sigma_rules"
+    SIGMA_RULES_DIR: str = str(_DATA_DIR / "sigma_rules")
     BEHAVIORAL_BRUTE_FORCE_THRESHOLD: int = 10
     BEHAVIORAL_BRUTE_FORCE_WINDOW: int = 300
     BEHAVIORAL_PASSWORD_SPRAY_THRESHOLD: int = 5

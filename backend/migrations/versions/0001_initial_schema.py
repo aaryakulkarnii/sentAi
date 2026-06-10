@@ -34,6 +34,7 @@ def upgrade() -> None:
         "mitre_techniques",
         sa.Column("id", sa.String(length=20), nullable=False),
         sa.Column("tactic", sa.String(length=100), nullable=False),
+        sa.Column("tactic_id", sa.String(length=20), nullable=True),
         sa.Column("technique", sa.String(length=200), nullable=False),
         sa.Column("sub_technique", sa.String(length=200), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
