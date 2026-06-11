@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: sentinelai-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DEV_MODE
+        value: "false"
+      - key: REDIS_URL
+        value: "inmemory"
+      - key: POSTGRES_DB
+        value: sentinelai
+      - key: POSTGRES_USER
+        value: sentinel
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sentinelai-db
+          property: connectionString
+      - key: ALLOWED_ORIGINS
+        value: '["https://frontend-eight-tan-91.vercel.app"]'
+
+databases:
+  - name: sentinelai-db
+    databaseName: sentinelai
+    user: sentinel
+    plan: free

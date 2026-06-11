@@ -122,7 +122,7 @@ class InMemoryRedis:
 # ── Lifecycle ───────────────────────────────────────────────────────────────
 async def init_redis() -> None:
     global _pool
-    if settings.DEV_MODE:
+    if settings.DEV_MODE or settings.REDIS_URL == "inmemory":
         _pool = InMemoryRedis()
         logger.info("redis_in_memory_ready")
         return
