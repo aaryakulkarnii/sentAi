@@ -33,7 +33,7 @@ async def _dispatch(alert_data: dict) -> None:
 
 async def publish_alert(alert_data: dict) -> None:
     # DEV_MODE: dispatch in-process (no Redis pub/sub server).
-    if settings.DEV_MODE:
+    if settings.DEV_MODE or settings.REDIS_URL == "inmemory":
         await _dispatch(alert_data)
         return
     redis = get_redis()

@@ -44,7 +44,7 @@ async def on_startup() -> None:
 
     # Real-time alert delivery.
     register_listener(broadcast_alert)
-    if not settings.DEV_MODE:
+    if not settings.DEV_MODE and settings.REDIS_URL != "inmemory":
         await start_alert_subscriber()
         try:
             await start_redis_consumer()
@@ -55,7 +55,7 @@ async def on_startup() -> None:
 
 
 async def on_shutdown() -> None:
-    if not settings.DEV_MODE:
+    if not settings.DEV_MODE and settings.REDIS_URL != "inmemory":
         await stop_redis_consumer()
         await stop_alert_subscriber()
     logger.info("sentinelai_backend_stopped")
