@@ -13,7 +13,7 @@ _engine_kwargs = {"echo": False}
 if not settings.DEV_MODE:
     _engine_kwargs["pool_pre_ping"] = True
 
-engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
+engine = create_async_engine(settings.get_database_url, **_engine_kwargs)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -32,7 +32,7 @@ async def init_db() -> None:
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
-        logger.info("dev_db_ready", url=settings.DATABASE_URL)
+        logger.info("dev_db_ready", url=settings.get_database_url)
         return
 
     async with engine.begin() as conn:

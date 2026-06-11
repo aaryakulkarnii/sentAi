@@ -36,8 +36,17 @@ class Settings(BaseSettings):
     # SQLite file used in DEV_MODE
     SQLITE_PATH: str = "sentinel_dev.db"
 
+    DATABASE_URL: str | None = None
+
     @property
-    def DATABASE_URL(self) -> str:
+    def get_database_url(self) -> str:
+        if self.DATABASE_URL:
+            url = self.DATABASE_URL
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return url
         if self.DEV_MODE:
             return f"sqlite+aiosqlite:///./{self.SQLITE_PATH}"
         return (
