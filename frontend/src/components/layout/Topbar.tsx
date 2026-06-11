@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Search, Command } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Search, Command, LogOut } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import CommandPalette from "@/components/layout/CommandPalette";
 
@@ -22,6 +22,8 @@ const TITLES: Record<string, string> = {
 export default function Topbar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const router = useRouter();
   const segment = pathname.split("/").filter(Boolean)[0] ?? "dashboard";
   const crumb = TITLES[segment] ?? "SentinelAI";
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -74,6 +76,17 @@ export default function Topbar() {
             </span>
           </div>
         </div>
+
+        <button
+          onClick={() => {
+            clearAuth();
+            router.replace("/login");
+          }}
+          title="Sign out"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-ink-400 transition-colors hover:border-white/15 hover:bg-white/[0.06] hover:text-ink-200"
+        >
+          <LogOut size={14} />
+        </button>
       </div>
     </header>
     </>

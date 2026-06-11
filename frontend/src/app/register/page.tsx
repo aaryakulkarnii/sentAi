@@ -4,36 +4,41 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ShieldHalf, Loader2, ArrowRight } from "lucide-react";
+import { ShieldHalf, Loader2, ArrowRight, UserPlus } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth";
-import { MOCK_AUTH, MOCK_TOKEN, MOCK_USER } from "@/lib/mockAuth";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
-  const [email, setEmail] = useState(MOCK_AUTH ? MOCK_USER.email : "");
-  const [password, setPassword] = useState(MOCK_AUTH ? "password" : "");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    if (MOCK_AUTH) {
-      setAuth(MOCK_USER, MOCK_TOKEN);
-      router.replace("/dashboard");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
 
+    setLoading(true);
     try {
-      const { data } = await authApi.login(email, password);
+      const { data } = await authApi.register(email, password, fullName || undefined);
       setAuth(data.user, data.access_token);
       router.replace("/dashboard");
-    } catch {
-      setError("Invalid email or password");
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } };
+      setError(axiosErr.response?.data?.detail || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -62,15 +67,34 @@ export default function LoginPage() {
         <div className="panel p-6">
           <form onSubmit={handleSubmit} className="relative space-y-4">
             <div>
-              <h2 className="text-sm font-medium text-white">Sign in to your workspace</h2>
-              <p className="mt-0.5 text-xs text-ink-400">Enter your credentials to continue</p>
+              <h2 className="text-sm font-medium text-white">Create your account</h2>
+              <p className="mt-0.5 text-xs text-ink-400">Join the SOC platform to get started</p>
             </div>
 
             {error && (
-              <p className="rounded-lg border border-sev-critical/20 bg-sev-critical/10 px-3 py-2 text-sm text-sev-critical">
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-lg border border-sev-critical/20 bg-sev-critical/10 px-3 py-2 text-sm text-sev-critical"
+              >
                 {error}
-              </p>
+              </motion.p>
             )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="fullName" className="text-[0.7rem] font-medium uppercase tracking-wider text-ink-400">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                autoComplete="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Optional"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white placeholder:text-ink-600 outline-none transition-colors focus:border-white/25 focus:bg-white/[0.05]"
+              />
+            </div>
 
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-[0.7rem] font-medium uppercase tracking-wider text-ink-400">
@@ -95,9 +119,25 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 required
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white outline-none transition-colors focus:border-white/25 focus:bg-white/[0.05]"
+              />
+              <p className="text-[0.62rem] text-ink-500">Minimum 8 characters</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="confirmPassword" className="text-[0.7rem] font-medium uppercase tracking-wider text-ink-400">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-white outline-none transition-colors focus:border-white/25 focus:bg-white/[0.05]"
               />
             </div>
@@ -111,7 +151,8 @@ export default function LoginPage() {
                 <Loader2 size={15} className="animate-spin" />
               ) : (
                 <>
-                  Sign in
+                  <UserPlus size={14} />
+                  Create Account
                   <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
@@ -119,21 +160,15 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {MOCK_AUTH ? (
-          <p className="mt-4 text-center text-[0.7rem] text-ink-500">
-            Demo mode · any credentials work
-          </p>
-        ) : (
-          <p className="mt-4 text-center text-xs text-ink-400">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-white transition-colors hover:text-ink-200 underline underline-offset-2 decoration-white/20 hover:decoration-white/40"
-            >
-              Register
-            </Link>
-          </p>
-        )}
+        <p className="mt-4 text-center text-xs text-ink-400">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-white transition-colors hover:text-ink-200 underline underline-offset-2 decoration-white/20 hover:decoration-white/40"
+          >
+            Sign in
+          </Link>
+        </p>
       </motion.div>
     </div>
   );

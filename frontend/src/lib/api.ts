@@ -44,6 +44,12 @@ export const authApi = {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
   },
+  register: (email: string, password: string, fullName?: string) =>
+    api.post<TokenResponse>("/auth/register", {
+      email,
+      password,
+      full_name: fullName || null,
+    }),
   me: () => api.get<User>("/auth/me"),
 };
 
@@ -111,4 +117,33 @@ export const mitreApi = {
 export const threatIntelApi = {
   searchIoc: (q: string) => api.get("/threat-intel/ioc/search", { params: { q } }),
   getCve: (id: string) => api.get(`/threat-intel/cve/${id}`),
+};
+
+// ── Reports endpoints ─────────────────────────────────────────────────────────
+export const reportsApi = {
+  list: () => api.get("/reports/"),
+  generate: (incident_id: string, format: string = "pdf") =>
+    api.post(`/reports/generate/${incident_id}?format=${format}`),
+  download: (id: string) => {
+    // Generate a temporary anchor tag to download the file directly
+    const token = localStorage.getItem("sentinel_token");
+    const url = `${api.defaults.baseURL}/reports/${id}/download`;
+    
+    return fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to download report");
+        return res.blob();
+      })
+      .then((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `report_${id}`; // Backend provides content-disposition but setting it here is safe
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+  },
 };
