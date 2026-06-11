@@ -5,7 +5,7 @@ services:
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
     plan: free
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /health
     envVars:
       - key: DEV_MODE
         value: "false"
