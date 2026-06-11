@@ -30,14 +30,69 @@ async def init_db() -> None:
         import app.models  # noqa: F401
 
         async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
         logger.info("dev_db_ready", url=settings.DATABASE_URL)
         return
 
-    async with engine.connect() as conn:
+    async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         await conn.execute(text("SELECT 1"))
+        await conn.run_sync(Base.metadata.create_all)
+        
+    async with AsyncSessionLocal() as session:
+        await seed_vector_db_if_empty(session)
 
 
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+async def seed_vector_db_if_empty(session: AsyncSession) -> None:
+    from sqlalchemy import select
+    from app.models.knowledge import ThreatKnowledge
+    from app.data.mitre_seed import seed_records
+    from app.data.playbooks import PLAYBOOKS
+    from app.rag.embedder import embed
+
+    result = await session.execute(select(ThreatKnowledge).limit(1))
+    if result.scalars().first():
+        return
+
+    logger.info("seeding_pgvector_threat_knowledge")
+    try:
+        docs = []
+        for rec in seed_records():
+            mitigation = rec.get("mitigation", {}).get("summary", "")
+            text = f"{rec['technique']} ({rec['id']}). {rec['description']} Mitigation: {mitigation}"
+            title = f"{rec['id']} {rec['technique']}"
+            vectors = embed([text])
+            docs.append(
+                ThreatKnowledge(
+                    external_id=rec["id"],
+                    title=title,
+                    text=text,
+                    source="mitre",
+                    embedding=vectors[0]
+                )
+            )
+
+        for tid, pb in PLAYBOOKS.items():
+            text = f"{pb['title']}. Response: " + " ".join(pb["steps"])
+            vectors = embed([text])
+            docs.append(
+                ThreatKnowledge(
+                    external_id=f"pb-{tid}",
+                    title=pb["title"],
+                    text=text,
+                    source="playbook",
+                    embedding=vectors[0]
+                )
+            )
+
+        if docs:
+            session.add_all(docs)
+            await session.commit()
+            logger.info("pgvector_threat_knowledge_seeded", count=len(docs))
+    except Exception as exc:
+        logger.error("pgvector_seeding_failed", error=str(exc))

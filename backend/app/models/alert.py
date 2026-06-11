@@ -17,7 +17,7 @@ class Alert(Base):
     source_ip: Mapped[str | None] = mapped_column(String(45))
     dest_ip: Mapped[str | None] = mapped_column(String(45))
     host_id: Mapped[str | None] = mapped_column(String, ForeignKey("assets.id"), nullable=True)
-    raw_event_id: Mapped[str | None] = mapped_column(String(255))  # OpenSearch doc ID
+    raw_event_id: Mapped[str | None] = mapped_column(String(255))  # Postgres LogEvent ID
     mitre_technique_id: Mapped[str | None] = mapped_column(String, ForeignKey("mitre_techniques.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="open")
     description: Mapped[str | None] = mapped_column(Text)

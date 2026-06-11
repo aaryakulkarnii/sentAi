@@ -7,12 +7,14 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "80:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+      # In production, this must point to the public IP or domain name of the Oracle server
+      NEXT_PUBLIC_API_URL: http://${PUBLIC_IP:-localhost}:8000
+      NEXT_PUBLIC_WS_URL: ws://${PUBLIC_IP:-localhost}:8000
     depends_on:
       - backend
+    restart: unless-stopped
 
   backend:
     build:
@@ -27,10 +29,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ../backend:/app
     entrypoint: ["/bin/bash", "/app/entrypoint.sh"]
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    restart: unless-stopped
 
   # ── Data stores ─────────────────────────────────────────────────────────────
   postgres:
@@ -40,7 +41,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sentinelai}
       POSTGRES_USER: ${POSTGRES_USER:-sentinel}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel_prod}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -48,6 +49,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 
   redis:
@@ -62,6 +64,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   postgres_data:

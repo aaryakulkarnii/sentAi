@@ -45,23 +45,10 @@ class Settings(BaseSettings):
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
-    # OpenSearch
-    OPENSEARCH_HOST: str = "opensearch"
-    OPENSEARCH_PORT: int = 9200
-
     # Redis
-    REDIS_HOST: str = "redis"
-    REDIS_PORT: int = 6379
-    REDIS_PASSWORD: str = ""
+    REDIS_URL: str = "redis://redis:6379/0"
 
-    # Qdrant
-    QDRANT_HOST: str = "qdrant"
-    QDRANT_PORT: int = 6333
-    QDRANT_API_KEY: str = ""
 
-    # Kafka – use kafka:29092 inside Docker; localhost:9092 from host
-    KAFKA_BOOTSTRAP_SERVERS: str = "kafka:29092"
-    KAFKA_CONSUMER_GROUP: str = "sentinelai-consumers"
 
     # LLM – Groq (free-tier, OpenAI-compatible). Set GROQ_API_KEY in .env.
     GROQ_API_KEY: str = ""

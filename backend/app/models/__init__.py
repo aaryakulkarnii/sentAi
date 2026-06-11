@@ -7,8 +7,10 @@ from app.models.investigation import Investigation
 from app.models.mitre import MitreTechnique
 from app.models.report import Report
 from app.models.user import User
+from app.models.knowledge import ThreatKnowledge
+from app.models.log_event import LogEvent
 
 __all__ = [
     "Alert", "ApiKey", "Asset", "DetectionRule", "Incident", "IncidentAlert",
-    "IncidentNote", "Investigation", "MitreTechnique", "Report", "User",
+    "IncidentNote", "Investigation", "MitreTechnique", "Report", "User", "ThreatKnowledge", "LogEvent"
 ]

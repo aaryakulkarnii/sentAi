@@ -24,14 +24,10 @@ dependencies = [
     "asyncpg>=0.29",
     "alembic>=1.13",
     "aiosqlite>=0.20",
-    # OpenSearch
-    "opensearch-py[async]>=2.5",
     # Redis
     "redis[hiredis]>=5.0",
-    # Qdrant
-    "qdrant-client>=1.9",
-    # Kafka
-    "aiokafka>=0.10",
+    # pgvector
+    "pgvector>=0.2",
     # AI / LangGraph
     "langchain>=0.2",
     "langgraph>=0.1",

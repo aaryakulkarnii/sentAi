@@ -1,16 +1,29 @@
 """RAG retrieval from Qdrant."""
 
-from app.db.qdrant import COLLECTION_THREAT, get_qdrant
+from sqlalchemy import select
+from app.db.postgres import AsyncSessionLocal
 from app.rag.embedder import embed
-
+from app.models.knowledge import ThreatKnowledge
 
 async def retrieve(query: str, top_k: int = 5) -> list[dict]:
-    client = get_qdrant()
     vectors = embed([query])
-    results = await client.search(
-        collection_name=COLLECTION_THREAT,
-        query_vector=vectors[0],
-        limit=top_k,
-        with_payload=True,
-    )
-    return [{"score": r.score, **r.payload} for r in results]
+    query_vector = vectors[0]
+
+    async with AsyncSessionLocal() as session:
+        stmt = select(ThreatKnowledge).order_by(
+            ThreatKnowledge.embedding.cosine_distance(query_vector)
+        ).limit(top_k)
+        
+        result = await session.execute(stmt)
+        records = result.scalars().all()
+        
+        return [
+            {
+                "id": r.external_id,
+                "title": r.title,
+                "text": r.text,
+                "source": r.source,
+                "score": 1.0  # Optional: compute 1 - cosine_distance if score is needed
+            }
+            for r in records
+        ]

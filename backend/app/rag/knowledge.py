@@ -66,12 +66,12 @@ class KnowledgeBase:
     async def search(self, query: str, top_k: int = 4) -> list[Document]:
         from app.core.config import settings
         
-        # In production mode, try real Qdrant + embeddings first
+        # In production mode, try real Postgres vector db + embeddings first
         if not settings.DEV_MODE:
             try:
                 from app.rag.retriever import retrieve
-                qdrant_results = await retrieve(query, top_k=top_k)
-                if qdrant_results:
+                db_results = await retrieve(query, top_k=top_k)
+                if db_results:
                     return [
                         Document(
                             id=r["id"],
@@ -79,11 +79,11 @@ class KnowledgeBase:
                             text=r["text"],
                             source=r["source"],
                         )
-                        for r in qdrant_results
+                        for r in db_results
                     ]
             except Exception as exc:
                 from structlog import get_logger
-                get_logger(__name__).warning("qdrant_search_failed_falling_back", error=str(exc))
+                get_logger(__name__).warning("vector_search_failed_falling_back", error=str(exc))
 
         # Fallback to term-overlap (DEV_MODE or on failure)
         self.build()

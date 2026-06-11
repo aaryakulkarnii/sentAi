@@ -4,12 +4,10 @@ import structlog
 
 from app.api.ws.alerts import broadcast_alert
 from app.core.config import settings
-from app.db.opensearch import init_opensearch
 from app.db.postgres import init_db
-from app.db.qdrant import init_qdrant
 from app.db.redis import init_redis
 from app.ingestion.enrichment import init_geoip
-from app.ingestion.kafka_consumer import start_kafka_consumer, stop_kafka_consumer
+from app.ingestion.redis_consumer import start_redis_consumer, stop_redis_consumer
 from app.ingestion.pipeline import init_engines
 from app.services.detection.behavioral import BehavioralEngine
 from app.services.detection.sigma_engine import SigmaEngine
@@ -30,11 +28,7 @@ async def on_startup() -> None:
     # Heavy infra — only in production. Each is best-effort so a missing
     # service degrades gracefully rather than crashing startup.
     if not settings.DEV_MODE:
-        for name, fn in (("opensearch", init_opensearch), ("qdrant", init_qdrant)):
-            try:
-                await fn()
-            except Exception as exc:
-                logger.warning("infra_init_failed", service=name, error=str(exc))
+
         try:
             await ensure_index_templates()
         except Exception as exc:
@@ -53,15 +47,15 @@ async def on_startup() -> None:
     if not settings.DEV_MODE:
         await start_alert_subscriber()
         try:
-            await start_kafka_consumer()
+            await start_redis_consumer()
         except Exception as exc:
-            logger.warning("kafka_consumer_unavailable", error=str(exc))
+            logger.warning("redis_consumer_unavailable", error=str(exc))
 
     logger.info("sentinelai_backend_ready", mode=mode)
 
 
 async def on_shutdown() -> None:
     if not settings.DEV_MODE:
-        await stop_kafka_consumer()
+        await stop_redis_consumer()
         await stop_alert_subscriber()
     logger.info("sentinelai_backend_stopped")

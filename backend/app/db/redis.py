@@ -129,10 +129,8 @@ async def init_redis() -> None:
 
     import redis.asyncio as aioredis
 
-    _pool = aioredis.Redis(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT,
-        password=settings.REDIS_PASSWORD or None,
+    _pool = aioredis.from_url(
+        settings.REDIS_URL,
         decode_responses=True,
     )
 
