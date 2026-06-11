@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # SQLite file used in DEV_MODE
     SQLITE_PATH: str = "sentinel_dev.db"
 
+    # Set to true on 512MB Render free tier to prevent OOM
+    DISABLE_LOCAL_EMBEDDINGS: bool = False
+
     DATABASE_URL: str | None = None
 
     @property
